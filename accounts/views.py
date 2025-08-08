@@ -33,7 +33,9 @@ User = get_user_model()
 
 class RegisterView(APIView):
     def post(self, request):
-        serializer = RegisterSerializer(data=request.data)  # ✅ Use the correct serializer
+        # serializer = RegisterSerializer(data=request.data)  # ✅ Use the correct serializer
+        serializer = RegisterSerializer(data=request.data, context={'request': request})
+
         if serializer.is_valid():
             user = serializer.save()
             user.is_active = True  # Optional: email-only login if needed
