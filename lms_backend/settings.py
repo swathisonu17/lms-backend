@@ -63,11 +63,11 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    # "https://your-frontend-url.com",  # Replace later when deployed
-]
+# CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:3000",
+#     # "https://your-frontend-url.com",  # Replace later when deployed
+# ]
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -105,18 +105,18 @@ WSGI_APPLICATION = 'lms_backend.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': os.environ.get('lms_db_h5wy'),
+#         'USER': os.environ.get('lms_db_h5wy_user'),
+#         'PASSWORD': os.environ.get('XJDNCYfWtouJzd8bdbmExg1UnpJX3Wuz'),
+#         'HOST': os.environ.get('dpg-d2ankner433s7390hm20-a'),
+#         'PORT': os.environ.get('5432'),
+#     }
+# }
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('lms_db_h5wy'),
-        'USER': os.environ.get('lms_db_h5wy_user'),
-        'PASSWORD': os.environ.get('XJDNCYfWtouJzd8bdbmExg1UnpJX3Wuz'),
-        'HOST': os.environ.get('dpg-d2ankner433s7390hm20-a'),
-        'PORT': os.environ.get('5432'),
-    }
-}
-DATABASES = {
-    'default': dj_database_url.config(default=os.environ.get('DATABASE_URL'))
+    'default': dj_database_url.config(default=os.environ.get('postgresql://lms_db_h5wy_user:XJDNCYfWtouJzd8bdbmExg1UnpJX3Wuz@dpg-d2ankner433s7390hm20-a/lms_db_h5wy'))
 }
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -177,3 +177,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOW_ALL_ORIGINS = True  # ⚠️ Safe for testing only
 
 CORS_ALLOW_CREDENTIALS = True
+
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    "https://lms-backend4.onrender.com",
+]
