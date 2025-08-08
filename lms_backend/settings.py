@@ -63,11 +63,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-# CORS_ALLOW_ALL_ORIGINS = True
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:3000",
-#     # "https://your-frontend-url.com",  # Replace later when deployed
-# ]
+
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -174,10 +170,22 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-CORS_ALLOW_ALL_ORIGINS = True  # ⚠️ Safe for testing only
+# CORS_ALLOW_ALL_ORIGINS = True  # ⚠️ Safe for testing only
+#
+# CORS_ALLOW_CREDENTIALS = True
+#
+#
+# CSRF_TRUSTED_ORIGINS = [
+#     "http://localhost:3000",
+#     "https://lms-backend4.onrender.com",
+# ]
 
+
+# CORS setup
 CORS_ALLOW_CREDENTIALS = True
-
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+]
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
