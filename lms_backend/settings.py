@@ -66,6 +66,7 @@ MIDDLEWARE = [
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
+    # "https://your-frontend-url.com",  # Replace later when deployed
 ]
 
 REST_FRAMEWORK = {
@@ -171,3 +172,8 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+CORS_ALLOW_ALL_ORIGINS = True  # ⚠️ Safe for testing only
+
+CORS_ALLOW_CREDENTIALS = True
