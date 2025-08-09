@@ -21,27 +21,53 @@ from .utils import send_verification_email
 User = get_user_model()
 
 
+# class RegisterView(APIView):
+#     def post(self, request):
+#         serializer = local_serializers.RegisterSerializer(data=request.data, context={'request': request})
+#         if serializer.is_valid():
+#             user = serializer.save()
+#             user.is_active = True
+#             user.save()
+#             send_verification_email(user, request)
+#             return Response({'message': 'Registration successful. Please verify your email.'}, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=400)
+#
+#
+# @api_view(['POST'])
+# def register(request):
+#     serializer = local_serializers.RegisterSerializer(data=request.data)
+#     if serializer.is_valid():
+#         user = serializer.save()
+#         user.is_active = True
+#         user.save()
+#         return Response({'message': 'Registration successful. Please verify your email.'})
+#     return Response(serializer.errors, status=400)
+
 class RegisterView(APIView):
     def post(self, request):
         serializer = local_serializers.RegisterSerializer(data=request.data, context={'request': request})
-        if serializer.is_valid():
+        try:
+            serializer.is_valid(raise_exception=True)
             user = serializer.save()
             user.is_active = True
             user.save()
             send_verification_email(user, request)
             return Response({'message': 'Registration successful. Please verify your email.'}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=400)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['POST'])
 def register(request):
     serializer = local_serializers.RegisterSerializer(data=request.data)
-    if serializer.is_valid():
+    try:
+        serializer.is_valid(raise_exception=True)
         user = serializer.save()
         user.is_active = True
         user.save()
-        return Response({'message': 'Registration successful. Please verify your email.'})
-    return Response(serializer.errors, status=400)
+        return Response({'message': 'Registration successful. Please verify your email.'}, status=status.HTTP_201_CREATED)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class VerifyEmail(APIView):
