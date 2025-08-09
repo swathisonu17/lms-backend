@@ -26,9 +26,11 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data.pop('password2')
-        role = self.context['request'].data.get('role')# Get role from the request
-        semester = validated_data.pop('semester', None)  # Only for students
-        usn = self.context['request'].data.get('usn')  # ✅ Add this line
+        # ✅ Get and remove role from validated_data (this ensures it's passed through validation)
+        role = validated_data.pop('role', None)
+        semester = validated_data.pop('semester', None)
+        usn = validated_data.pop('usn', None)
+
 
         user = User.objects.create_user(
             username=validated_data['username'],
@@ -37,14 +39,16 @@ class RegisterSerializer(serializers.ModelSerializer):
             # role=validated_data['role']  # ✅ Save role in User model
         )
         # Set role flags
-        if role == 'student':
+        # if role == 'student':
+        if role and role.lower() == 'student':
             user.is_student = True
             user.save()
             # ✅ Create student profile
             from .models import Student
             Student.objects.create(user=user, email=user.email, semester=semester,usn=usn)
 
-        elif role == 'faculty':
+        # elif role == 'faculty':
+        elif role and role.lower() == 'faculty':
             user.is_faculty = True
             user.save()
             # ✅ Create faculty profile

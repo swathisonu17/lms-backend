@@ -64,9 +64,6 @@ def register(request):
             if semester:
                 Student.objects.create(user=user, email=email, semester=int(semester))
 
-        # Optional: send email
-        # send_verification_email(user, request)
-
         return Response({'message': 'Registration successful. Please verify your email.'})
     return Response(serializer.errors, status=400)
 
