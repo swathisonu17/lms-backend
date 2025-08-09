@@ -1,127 +1,91 @@
-from django.contrib.auth import get_user_model, authenticate
-from django.shortcuts import render
-from rest_framework import generics, permissions
-from rest_framework.decorators import api_view
-from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from . import serializers
-from .serializers import RegisterSerializer, UserDetailSerializer
-from django.contrib.auth.tokens import default_token_generator
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from .models import User
-from .utils import send_verification_email
-from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework_simplejwt.exceptions import AuthenticationFailed
-from django.utils.http import urlsafe_base64_decode
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.utils.encoding import force_bytes
 from django.conf import settings
 from django.core.mail import send_mail
-from django.utils.encoding import force_str
-from django.utils.http import urlsafe_base64_encode
-from django.utils.encoding import force_bytes
-from .models import Student  # ✅ Import your Student model
 
+from rest_framework import status
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.decorators import api_view
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework import serializers as drf_serializers
 
-# Create your views here.
+from . import serializers as local_serializers
+from .models import Student, Faculty
+from .utils import send_verification_email
 
 User = get_user_model()
 
 
 class RegisterView(APIView):
     def post(self, request):
-        # serializer = RegisterSerializer(data=request.data)  # ✅ Use the correct serializer
-        serializer = RegisterSerializer(data=request.data, context={'request': request})
-
+        serializer = local_serializers.RegisterSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             user = serializer.save()
-            user.is_active = True  # Optional: email-only login if needed
+            user.is_active = True
             user.save()
             send_verification_email(user, request)
             return Response({'message': 'Registration successful. Please verify your email.'}, status=status.HTTP_201_CREATED)
-        print("Serializer errors:", serializer.errors)
         return Response(serializer.errors, status=400)
-
 
 
 @api_view(['POST'])
 def register(request):
-    serializer = RegisterSerializer(data=request.data)
+    serializer = local_serializers.RegisterSerializer(data=request.data)
     if serializer.is_valid():
         user = serializer.save()
         user.is_active = True
         user.save()
-
-        role = request.data.get('role')
-        email = request.data.get('email')
-
-        if role == "Student":
-            semester = request.data.get('semester')
-            # ✅ Only create Student if semester is provided
-            if semester:
-                Student.objects.create(user=user, email=email, semester=int(semester))
-
         return Response({'message': 'Registration successful. Please verify your email.'})
     return Response(serializer.errors, status=400)
+
 
 class VerifyEmail(APIView):
     def get(self, request, uidb64, token, *args, **kwargs):
         try:
             uid = urlsafe_base64_decode(uidb64).decode()
             user = User.objects.get(pk=uid)
-
             if default_token_generator.check_token(user, token):
                 user.is_active = True
                 user.save()
                 return Response({'message': 'Email verified successfully'}, status=200)
             else:
                 return Response({'error': 'Invalid token'}, status=400)
-
-        except Exception as e:
+        except Exception:
             return Response({'error': 'Verification failed'}, status=400)
-
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         email = attrs.get("email")
         password = attrs.get("password")
-
         user = User.objects.filter(email=email).first()
 
         if user:
             if not user.check_password(password):
-                raise serializers.ValidationError("Invalid password.")
+                raise drf_serializers.ValidationError("Invalid password.")
             if not user.is_active:
-                raise serializers.ValidationError("Account is not verified.")
-
-            # ✅ Force the username for token creation (SimpleJWT requires it)
+                raise drf_serializers.ValidationError("Account is not verified.")
             attrs['username'] = user.username
-
-            # Generate token using parent class
             data = super().validate(attrs)
-
-            # ✅ Add custom fields
             data['role'] = "faculty" if user.is_faculty else "student"
             data['email'] = user.email
             data['username'] = user.username
             return data
 
-        raise serializers.ValidationError("Invalid email or password.")
-
+        raise drf_serializers.ValidationError("Invalid email or password.")
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
 
-
 class UserDetailView(APIView):
     permission_classes = [IsAuthenticated]
-
     def get(self, request):
         user = request.user
         return Response({
@@ -129,7 +93,6 @@ class UserDetailView(APIView):
             "email": user.email,
             "is_faculty": getattr(user, "is_faculty", False),
             "is_student": getattr(user, "is_student", False),
-
         })
 
 
@@ -141,9 +104,8 @@ class ForgotPasswordView(APIView):
         except User.DoesNotExist:
             return Response({"error": "User not found."}, status=404)
 
-        uid = urlsafe_base64_encode(force_bytes(user.pk))  # ✅ ENCODE UID HERE
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
-
         reset_link = f"{settings.FRONTEND_URL}/reset-password/{uid}/{token}/"
 
         send_mail(
@@ -153,9 +115,7 @@ class ForgotPasswordView(APIView):
             [user.email],
             fail_silently=False,
         )
-
         return Response({"message": "Password reset link sent."})
-
 
 
 class ResetPasswordView(APIView):
@@ -176,6 +136,3 @@ class ResetPasswordView(APIView):
         user.set_password(password)
         user.save()
         return Response({'message': 'Password reset successful!'}, status=status.HTTP_200_OK)
-
-
-

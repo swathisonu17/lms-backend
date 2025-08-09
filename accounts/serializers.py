@@ -1,19 +1,21 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
-from .models import Student
-from rest_framework import serializers
-from .models import Student
+from .models import Student, Faculty
+
 User = get_user_model()
 
 class RegisterSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
-    role = serializers.ChoiceField(choices=[('Student', 'Student'), ('Faculty', 'Faculty')])  # ✅ Add role field
+    role = serializers.ChoiceField(choices=[('Student', 'Student'), ('Faculty', 'Faculty')])
+
+    # Optional fields for Student creation
+    semester = serializers.IntegerField(required=False, allow_null=True)
+    usn = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = User
-        # fields = ['username', 'email', 'password', 'password2']
-        fields = ['username', 'email', 'password', 'password2', 'role']  # ✅ Include role
+        fields = ['username', 'email', 'password', 'password2', 'role', 'semester', 'usn']
         extra_kwargs = {
             'password': {'write_only': True}
         }
@@ -26,36 +28,32 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data.pop('password2')
-        # ✅ Get and remove role from validated_data (this ensures it's passed through validation)
         role = validated_data.pop('role', None)
         semester = validated_data.pop('semester', None)
         usn = validated_data.pop('usn', None)
 
-
+        # Create user
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
-            password=validated_data['password'],
-            # role=validated_data['role']  # ✅ Save role in User model
+            password=validated_data['password']
         )
-        # Set role flags
-        # if role == 'student':
+
+        # ✅ Always set both flags explicitly
         if role and role.lower() == 'student':
             user.is_student = True
+            user.is_faculty = False
             user.save()
-            # ✅ Create student profile
-            from .models import Student
-            Student.objects.create(user=user, email=user.email, semester=semester,usn=usn)
+            Student.objects.create(user=user, email=user.email, semester=semester, usn=usn)
 
-        # elif role == 'faculty':
         elif role and role.lower() == 'faculty':
             user.is_faculty = True
+            user.is_student = False
             user.save()
-            # ✅ Create faculty profile
-            from .models import Faculty
             Faculty.objects.create(user=user, email=user.email)
-        user.save()
+
         return user
+
 
 class UserDetailSerializer(serializers.ModelSerializer):
     class Meta:
