@@ -9,7 +9,6 @@ class RegisterSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
     role = serializers.ChoiceField(choices=[('Student', 'Student'), ('Faculty', 'Faculty')])
 
-    # Optional fields for Student creation
     semester = serializers.IntegerField(required=False, allow_null=True)
     usn = serializers.CharField(required=False, allow_blank=True)
 
@@ -24,22 +23,37 @@ class RegisterSerializer(serializers.ModelSerializer):
         if attrs['password'] != attrs['password2']:
             raise serializers.ValidationError({"password": "Passwords do not match."})
         validate_password(attrs['password'])
+
+        role = attrs.get('role')
+        if role == 'Student':
+            semester = attrs.get('semester')
+            usn = attrs.get('usn')
+
+            if semester in [None, '']:
+                raise serializers.ValidationError({"semester": "Semester is required for students."})
+            if usn in [None, '']:
+                raise serializers.ValidationError({"usn": "USN is required for students."})
+
         return attrs
 
     def create(self, validated_data):
         validated_data.pop('password2')
         role = validated_data.pop('role', None)
-        semester = validated_data.pop('semester', None)
-        usn = validated_data.pop('usn', None)
 
-        # Create user
+        # Clean semester and usn, default to None if not given or empty
+        semester = validated_data.pop('semester', None)
+        if semester == '':
+            semester = None
+        usn = validated_data.pop('usn', None)
+        if usn == '':
+            usn = None
+
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
             password=validated_data['password']
         )
 
-        # ✅ Always set both flags explicitly
         if role and role.lower() == 'student':
             user.is_student = True
             user.is_faculty = False
